@@ -137,8 +137,20 @@ class TagClient(Client):
         self.tagback_timer.stop()
 
     @property
+    def tagged_time_seconds(self):
+        return (datetime.now() - self.tagged_datetime).total_seconds()
+
+    @property
+    def tagged_time_string(self):
+        return get_time_str_from_seconds(self.tagged_time_seconds)
+
+    @property
     def prev_tagged_time_string(self):
         return get_time_str_from_seconds(self.prev_tagged_time_seconds)
+
+    @property
+    def tagback_timer_running(self):
+        return not client.tagback_timer.finished
 
     @property
     def tagback_time_remaining_seconds(self):
@@ -227,6 +239,19 @@ async def tag_command(interaction: Interaction):
     view = PlayerSelectView(interaction.text_channel, interaction.user.id)
     await interaction.response.send_message(content="Select a player to tag.", view=view, ephemeral=True)
     save()
+
+
+@client.tree.command(name="timetagged", description="How long the currently tagged user has been it.")
+async def timetagged_command(interaction: Interaction):
+    await interaction.response.send_message(content=f"{client.currently_tagged} has been it for {client.tagged_time_string}.", ephemeral=True)
+
+
+@client.tree.command(name="cooldown", description="How much longer the tagback cooldown will last.")
+async def cooldown_command(interaction: Interaction):
+    if client.tagback_timer_running:
+        await interaction.response.send_message(content=f"The cooldown has {client.tagback_time_remaining_string} remaining.", ephemeral=True)
+    else:
+        await interaction.response.send_message(content="The cooldown has expired.", ephemeral=True)
 
 
 client.run(DISCORD_TOKEN)
